@@ -23,7 +23,7 @@ def salvar_array_c(nome_arquivo, array, nome_variavel="data"):
 
 freq = 100
 amplitude = 0.5
-offset = 0.5     # ======= OFFSET =========
+offset = amplitude    
 
 fs = 20 * (10**3)
 duracao = 1
