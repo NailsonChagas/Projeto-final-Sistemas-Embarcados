@@ -46,10 +46,10 @@ sinal_triangular += offset
 sinal_seno_retificado += offset
 
 # Salvando
-salvar_array_c('sinal_seno_c.txt', sinal_seno, "sinal_seno")
-salvar_array_c('sinal_quadrado_c.txt', sinal_quadrado, "sinal_quadrado")
-salvar_array_c('sinal_triangular_c.txt', sinal_triangular, "sinal_triangular")
-salvar_array_c('sinal_seno_retificado_c.txt', sinal_seno_retificado, "sinal_seno_retificado")
+salvar_array_c('sinal_seno_c.c', sinal_seno, "sinal_seno")
+salvar_array_c('sinal_quadrado_c.c', sinal_quadrado, "sinal_quadrado")
+salvar_array_c('sinal_triangular_c.c', sinal_triangular, "sinal_triangular")
+salvar_array_c('sinal_seno_retificado_c.c', sinal_seno_retificado, "sinal_seno_retificado")
 
 # Plotagem
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
