@@ -106,16 +106,18 @@ static const float *waveforms[] = {
     triangle_wave
 };
 
-void waveform_init(WaveformCtrl *ctrl)
+void waveform_init(WaveformCtrl *ctrl, uint8_t max_amplitude)
 {
 	ctrl->type = WAVE_SQUARE;
 	ctrl->index = 0;
+	ctrl->amplitude = 1;
+	ctrl->max_amplitude = max_amplitude;
 }
 
 void waveform_get_sample(WaveformCtrl *ctrl, float *out)
 {
 	// desabilitar interrupção do botão aqui
-	*out = waveforms[ctrl->type][ctrl->index];
+	*out = waveforms[ctrl->type][ctrl->index] * ctrl->amplitude;
 	ctrl->index++;
 	if (ctrl->index >= N_POINTS) {
 		ctrl->index = 0;
@@ -132,6 +134,17 @@ void waveform_next_wave(WaveformCtrl *ctrl)
     }
 
     ctrl->index = 0;
+}
+
+void waveform_update_amplitude(WaveformCtrl *ctrl, int16_t delta)
+{
+    ctrl->amplitude += delta;
+
+    if (ctrl->amplitude > ctrl->max_amplitude) {
+        ctrl->amplitude = ctrl->max_amplitude;
+    } else if (ctrl->amplitude < 0) {
+        ctrl->amplitude = 0;
+    }
 }
 
 

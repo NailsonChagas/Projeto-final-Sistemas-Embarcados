@@ -22,11 +22,14 @@ typedef enum {
 
 typedef struct {
 	WaveformType type;   // qual onda está ativa
-    uint16_t index;         // posição atual dentro do array (0–99)
+    uint16_t index;      // posição atual dentro do array (0–99)
+    int8_t amplitude;
+    uint8_t max_amplitude;
 } WaveformCtrl;
 
-void waveform_init(WaveformCtrl *ctrl);
+void waveform_init(WaveformCtrl *ctrl, uint8_t max_amplitude);
 void waveform_get_sample(WaveformCtrl *ctrl, float *out);
 void waveform_next_wave();
+void waveform_update_amplitude(WaveformCtrl *ctrl, int16_t delta);
 
 #endif /* INC_WAVE_TABLE_H_ */
