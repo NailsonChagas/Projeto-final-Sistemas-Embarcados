@@ -25,7 +25,7 @@ freq = 100
 amplitude = 0.5
 offset = amplitude    
 
-fs = 20 * (10**3)
+fs = 10 * (10**3)
 duracao = 1
 t = np.linspace(0, duracao / freq, int(fs / freq), endpoint=False)
 
