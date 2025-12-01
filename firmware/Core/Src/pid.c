@@ -19,9 +19,9 @@ void pid_init(PID_Controller *pid, float kp, float ki, float kd, uint16_t time_c
     pid->ui_prev = 0.0f;
 }
 
-uint16_t pid_compute(PID_Controller *pid, float reference, float measurement)
+uint16_t pid_compute(PID_Controller *pid, float *reference, float *measurement, uint16_t *out)
 {
-    float e = reference - measurement;
+    float e = *reference - *measurement;
     float ui = pid->ui_prev + pid->ki * e;
 
     float pid_output = (pid->kp * e) + ui + (pid->kd * (e - pid->e_prev));
@@ -29,5 +29,5 @@ uint16_t pid_compute(PID_Controller *pid, float reference, float measurement)
     pid->e_prev = e;
     pid->ui_prev = ui;
 
-    return (uint16_t)(pid_output * pid->duty_cycle_cvt);
+    *out = (uint16_t)(pid_output * pid->duty_cycle_cvt);
 }

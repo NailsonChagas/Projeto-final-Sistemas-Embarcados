@@ -12,6 +12,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "pid.h"
+#include "wave_table.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

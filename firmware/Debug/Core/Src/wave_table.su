@@ -1,0 +1,3 @@
+../Core/Src/wave_table.c:109:6:waveform_init	16	static
+../Core/Src/wave_table.c:115:6:waveform_get_sample	16	static
+../Core/Src/wave_table.c:126:6:waveform_next_wave	16	static
