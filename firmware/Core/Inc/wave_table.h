@@ -9,7 +9,6 @@
 #define INC_WAVE_TABLE_H_
 
 #include "stm32g4xx_hal.h"
-#include "cmsis_os.h"
 
 #define N_POINTS 100
 
@@ -22,14 +21,14 @@ typedef enum {
 } WaveformType;
 
 typedef struct {
-	WaveformType type;   // qual onda está ativa
-    uint16_t index;      // posição atual dentro do array (0–99)
-    int8_t amplitude;
+	volatile WaveformType type;   // qual onda está ativa
+	volatile uint16_t index;      // posição atual dentro do array (0–99)
+	volatile int8_t amplitude;
     uint8_t max_amplitude;
 } WaveformCtrl;
 
 void waveform_init(WaveformCtrl *ctrl, uint8_t max_amplitude);
-void waveform_get_sample(WaveformCtrl *ctrl, float *out);
+void waveform_get_sample(WaveformCtrl *ctrl, volatile float *out);
 void waveform_next_wave();
 void waveform_update_amplitude(WaveformCtrl *ctrl, int16_t delta);
 

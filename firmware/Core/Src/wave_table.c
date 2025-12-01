@@ -114,7 +114,7 @@ void waveform_init(WaveformCtrl *ctrl, uint8_t max_amplitude)
 	ctrl->max_amplitude = max_amplitude;
 }
 
-void waveform_get_sample(WaveformCtrl *ctrl, float *out)
+void waveform_get_sample(WaveformCtrl *ctrl, volatile float *out)
 {
 	/* Desablitando interrupções para impedir a troca de onda
 	 * e/ou amplitude durante o retorno da referencia

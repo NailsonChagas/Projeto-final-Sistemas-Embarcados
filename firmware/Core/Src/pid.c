@@ -1,6 +1,6 @@
 #include "pid.h"
 
-void pid_init(PID_Controller *pid, float kp, float ki, float kd, uint16_t time_counter, uint8_t max_input)
+void pid_init(PIDController *pid, float kp, float ki, float kd, uint16_t time_counter, uint8_t max_input)
 {
 	/*
 	 * Controlador PID
@@ -19,7 +19,7 @@ void pid_init(PID_Controller *pid, float kp, float ki, float kd, uint16_t time_c
     pid->ui_prev = 0.0f;
 }
 
-uint16_t pid_compute(PID_Controller *pid, float *reference, float *measurement, uint16_t *out)
+void pid_compute(PIDController *pid, volatile float *reference, volatile float *measurement, volatile uint16_t *out)
 {
     float e = *reference - *measurement;
     float ui = pid->ui_prev + pid->ki * e;

@@ -23,6 +23,10 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define MAX_VOLTAGE 24
+#define TIMER_COUNT 17000
+#define Kp 0.09f
+#define Ki 0.2f
+#define Kd 0.05f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -33,10 +37,19 @@
 /* Private variables ---------------------------------------------------------*/
 osThreadId PIDHandle;
 /* USER CODE BEGIN PV */
+// software timers para debounce
 TimerHandle_t btn_c13_debounce;
 TimerHandle_t btn_c12_debounce;
 TimerHandle_t btn_c10_debounce;
+
+// handlers (Filtros, Seletores, Controle, ...)
 WaveformCtrl waveform_selector;
+PIDController pid_controller;
+
+// variaveis globais
+volatile float buck_output = 0.5; //só para testar
+volatile float reference;
+volatile uint16_t duty_cycle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,6 +123,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   waveform_init(&waveform_selector, MAX_VOLTAGE);
+  pid_init(&pid_controller, Kp, Ki, Kd, TIMER_COUNT, MAX_VOLTAGE);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -273,7 +287,13 @@ void PIDTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	/*
+	 * na pratica buck_output devia estar vindo do adc convertido
+	 *
+	 */
+	waveform_get_sample(&waveform_selector, &reference);
+	pid_compute(&pid_controller, &reference, &buck_output, &duty_cycle);
+    osDelay(100); // só para testar
   }
   /* USER CODE END 5 */
 }
