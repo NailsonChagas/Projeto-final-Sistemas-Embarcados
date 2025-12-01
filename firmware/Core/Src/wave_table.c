@@ -116,13 +116,18 @@ void waveform_init(WaveformCtrl *ctrl, uint8_t max_amplitude)
 
 void waveform_get_sample(WaveformCtrl *ctrl, float *out)
 {
-	// desabilitar interrupção do botão aqui
+	/* Desablitando interrupções para impedir a troca de onda
+	 * e/ou amplitude durante o retorno da referencia
+	 * */
+	HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+
 	*out = waveforms[ctrl->type][ctrl->index] * ctrl->amplitude;
 	ctrl->index++;
 	if (ctrl->index >= N_POINTS) {
 		ctrl->index = 0;
 	}
-	// habilitar interrupção do botão aqui
+
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
 void waveform_next_wave(WaveformCtrl *ctrl)

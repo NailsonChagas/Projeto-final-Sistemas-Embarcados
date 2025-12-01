@@ -34,6 +34,8 @@
 osThreadId PIDHandle;
 /* USER CODE BEGIN PV */
 TimerHandle_t btn_c13_debounce;
+TimerHandle_t btn_c12_debounce;
+TimerHandle_t btn_c10_debounce;
 WaveformCtrl waveform_selector;
 /* USER CODE END PV */
 
@@ -45,18 +47,50 @@ void PIDTask(void const * argument);
 /* USER CODE BEGIN PFP */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_13)
-	{
-		BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
-		HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);  // Desabilita interrupções
-		xTimerStartFromISR(btn_c13_debounce, &pxHigherPriorityTaskWoken);
-		portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
-	}
+    BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
+    HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+
+    switch (GPIO_Pin)
+    {
+        case GPIO_PIN_13:
+        {
+        	xTimerStartFromISR(btn_c13_debounce, &pxHigherPriorityTaskWoken);
+        	break;
+        }
+        case GPIO_PIN_12:
+        {
+        	xTimerStartFromISR(btn_c12_debounce, &pxHigherPriorityTaskWoken);
+        	break;
+        }
+        case GPIO_PIN_10:
+        {
+        	xTimerStartFromISR(btn_c10_debounce, &pxHigherPriorityTaskWoken);
+        	break;
+        }
+        default:
+        {
+        	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+        	return;
+        }
+    }
+    portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
 }
 
 void btn_c13_callback(TimerHandle_t xTimer)
 {
 	waveform_next_wave(&waveform_selector);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);  // Reabilita interrupções
+}
+
+void btn_c12_callback(TimerHandle_t xTimer)
+{
+	waveform_update_amplitude(&waveform_selector, -1);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);  // Reabilita interrupções
+}
+
+void btn_c10_callback(TimerHandle_t xTimer)
+{
+	waveform_update_amplitude(&waveform_selector, 1);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);  // Reabilita interrupções
 }
 
@@ -110,7 +144,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
-  btn_c13_debounce = xTimerCreate("BTN13 debounce", 50, pdFALSE, NULL, btn_c13_callback);
+  btn_c13_debounce = xTimerCreate("BTNC13 debounce", 50, pdFALSE, NULL, btn_c13_callback);
+  btn_c12_debounce = xTimerCreate("BTNC12 debounce", 50, pdFALSE, NULL, btn_c12_callback);
+  btn_c10_debounce = xTimerCreate("BTNC10 debounce", 50, pdFALSE, NULL, btn_c10_callback);
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -205,8 +241,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
-  /*Configure GPIO pin : PC13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  /*Configure GPIO pins : PC13 PC10 PC12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_10|GPIO_PIN_12;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);

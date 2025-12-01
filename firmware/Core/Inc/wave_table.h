@@ -8,6 +8,7 @@
 #ifndef INC_WAVE_TABLE_H_
 #define INC_WAVE_TABLE_H_
 
+#include "stm32g4xx_hal.h"
 #include "cmsis_os.h"
 
 #define N_POINTS 100
