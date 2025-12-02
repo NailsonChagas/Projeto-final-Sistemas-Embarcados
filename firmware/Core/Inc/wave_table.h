@@ -17,6 +17,7 @@ typedef enum {
     WAVE_SINE,
     WAVE_RECTIFIED_SINE,
     WAVE_TRIANGLE,
+	WAVE_DC,
 	WAVE_MAX
 } WaveformType;
 

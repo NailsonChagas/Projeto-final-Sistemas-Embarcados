@@ -1,4 +1,4 @@
-../Core/Src/wave_table.c:109:6:waveform_init	16	static
-../Core/Src/wave_table.c:117:6:waveform_get_sample	16	static
-../Core/Src/wave_table.c:133:6:waveform_next_wave	16	static
-../Core/Src/wave_table.c:144:6:waveform_update_amplitude	16	static
+../Core/Src/wave_table.c:133:6:waveform_init	16	static
+../Core/Src/wave_table.c:141:6:waveform_get_sample	16	static
+../Core/Src/wave_table.c:157:6:waveform_next_wave	16	static
+../Core/Src/wave_table.c:168:6:waveform_update_amplitude	16	static

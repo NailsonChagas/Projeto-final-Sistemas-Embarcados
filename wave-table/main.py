@@ -38,6 +38,7 @@ sinal_seno = amplitude * np.sin(2 * np.pi * freq * t)
 sinal_quadrado = amplitude * np.sign(np.sin(2 * np.pi * freq * t))
 sinal_triangular = (2 * amplitude / np.pi) * np.arcsin(np.sin(2 * np.pi * freq * t))
 sinal_seno_retificado = amplitude * np.abs(np.sin(2 * np.pi * freq * t))
+sinal_cc = np.ones_like(t) * 1.0
 
 # ===== APLICANDO OFFSET =====
 sinal_seno += offset
@@ -50,9 +51,11 @@ salvar_array_c('sinal_seno_c.c', sinal_seno, "sinal_seno")
 salvar_array_c('sinal_quadrado_c.c', sinal_quadrado, "sinal_quadrado")
 salvar_array_c('sinal_triangular_c.c', sinal_triangular, "sinal_triangular")
 salvar_array_c('sinal_seno_retificado_c.c', sinal_seno_retificado, "sinal_seno_retificado")
+salvar_array_c('sinal_cc_c.c', sinal_cc, "sinal_cc")
 
 # Plotagem
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+# Plotagem — tudo na mesma figura
+fig, axes = plt.subplots(2, 3, figsize=(15, 8))
 fig.suptitle(f'Sinais com Frequência = {freq} Hz, Amplitude = {amplitude}, Offset = {offset}', fontsize=16)
 
 axes[0,0].plot(t, sinal_seno, linewidth=2)
@@ -63,13 +66,19 @@ axes[0,1].plot(t, sinal_quadrado, linewidth=2)
 axes[0,1].set_title('Sinal Quadrado')
 axes[0,1].grid(True, alpha=0.3)
 
-axes[1,0].plot(t, sinal_triangular, linewidth=2)
-axes[1,0].set_title('Sinal Triangular')
+axes[0,2].plot(t, sinal_triangular, linewidth=2)
+axes[0,2].set_title('Sinal Triangular')
+axes[0,2].grid(True, alpha=0.3)
+
+axes[1,0].plot(t, sinal_seno_retificado, linewidth=2)
+axes[1,0].set_title('Seno Retificado')
 axes[1,0].grid(True, alpha=0.3)
 
-axes[1,1].plot(t, sinal_seno_retificado, linewidth=2)
-axes[1,1].set_title('Seno Retificado')
+axes[1,1].plot(t, sinal_cc, linewidth=2)
+axes[1,1].set_title('Sinal CC')
 axes[1,1].grid(True, alpha=0.3)
+
+axes[1,2].axis('off')
 
 plt.tight_layout()
 plt.savefig('verificacao_sinais.png', dpi=150, bbox_inches='tight')
