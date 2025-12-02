@@ -5,7 +5,7 @@
 #include "stm32g4xx_hal.h"
 
 typedef struct {
-	uint16_t duty_cycle_cvt;
+	float duty_cycle_cvt;
 	uint8_t max_input;
 
     float kp;

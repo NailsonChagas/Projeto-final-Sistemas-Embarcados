@@ -9,7 +9,7 @@ void pid_init(PIDController *pid, float kp, float ki, float kd, uint16_t time_co
 	 * uD(k) = Kd*(e(k) - e(k-1))
 	 * uPID = uP(k) + uI(k) + uD(k)
 	 **/
-	pid->duty_cycle_cvt = time_counter/max_input;
+	pid->duty_cycle_cvt = (float)time_counter / max_input;
 	pid->max_input = max_input;
 
     pid->kp = kp;
