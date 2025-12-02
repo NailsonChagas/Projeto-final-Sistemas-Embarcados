@@ -176,4 +176,3 @@ void waveform_update_amplitude(WaveformCtrl *ctrl, int16_t delta)
     }
 }
 
-
