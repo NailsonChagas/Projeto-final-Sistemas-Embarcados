@@ -65,6 +65,7 @@ PIDController pid_controller;
 // variaveis globais
 volatile float buck_output;
 volatile float reference;
+led_t led_75 = { 75, GPIO_PIN_5, GPIOA };
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -215,8 +216,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  static led_t led_75 = { 75, GPIO_PIN_5, GPIOA };
-  xTaskCreate(led_task, "LED75", 256, &led_75, 4, NULL);
+  xTaskCreate(led_task, "LED75", 128, &led_75, 4, NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */

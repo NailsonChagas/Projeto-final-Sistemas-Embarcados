@@ -5682,8 +5682,8 @@ LOAD /opt/st/stm32cubeide_1.18.1/plugins/com.st.stm32cube.ide.mcu.externaltools.
                 0x20000000                        _sdata = .
  *(.data)
  *(.data*)
- .data.led_75.0
-                0x20000000        0xc ./Core/Src/main.o
+ .data.led_75   0x20000000        0xc ./Core/Src/main.o
+                0x20000000                led_75
  .data.SystemCoreClock
                 0x2000000c        0x4 ./Core/Src/system_stm32g4xx.o
                 0x2000000c                SystemCoreClock

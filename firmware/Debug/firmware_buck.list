@@ -1024,30 +1024,30 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  static led_t led_75 = { 75, GPIO_PIN_5, GPIOA };
-  xTaskCreate(led_task, "LED75", 256, &led_75, 4, NULL);
+  xTaskCreate(led_task, "LED75", 128, &led_75, 4, NULL);
  8000b16:	2300      	movs	r3, #0
  8000b18:	9301      	str	r3, [sp, #4]
  8000b1a:	2304      	movs	r3, #4
  8000b1c:	9300      	str	r3, [sp, #0]
  8000b1e:	4b1a      	ldr	r3, [pc, #104]	@ (8000b88 <main+0x144>)
- 8000b20:	f44f 7280 	mov.w	r2, #256	@ 0x100
- 8000b24:	4919      	ldr	r1, [pc, #100]	@ (8000b8c <main+0x148>)
- 8000b26:	481a      	ldr	r0, [pc, #104]	@ (8000b90 <main+0x14c>)
- 8000b28:	f006 fb3a 	bl	80071a0 <xTaskCreate>
+ 8000b20:	2280      	movs	r2, #128	@ 0x80
+ 8000b22:	491a      	ldr	r1, [pc, #104]	@ (8000b8c <main+0x148>)
+ 8000b24:	481a      	ldr	r0, [pc, #104]	@ (8000b90 <main+0x14c>)
+ 8000b26:	f006 fb3b 	bl	80071a0 <xTaskCreate>
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
   osKernelStart();
- 8000b2c:	f005 fbee 	bl	800630c <osKernelStart>
+ 8000b2a:	f005 fbef 	bl	800630c <osKernelStart>
 
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
- 8000b30:	bf00      	nop
- 8000b32:	e7fd      	b.n	8000b30 <main+0xec>
+ 8000b2e:	bf00      	nop
+ 8000b30:	e7fd      	b.n	8000b2e <main+0xea>
+ 8000b32:	bf00      	nop
  8000b34:	2000022c 	.word	0x2000022c
  8000b38:	3d4ccccd 	.word	0x3d4ccccd
  8000b3c:	3e4ccccd 	.word	0x3e4ccccd
