@@ -92,3 +92,4 @@ print(f"{'Seno':15} | {len(sinal_seno):8} | {sinal_seno.min():10.6f} | {sinal_se
 print(f"{'Quadrado':15} | {len(sinal_quadrado):8} | {sinal_quadrado.min():10.6f} | {sinal_quadrado.max():10.6f}")
 print(f"{'Triangular':15} | {len(sinal_triangular):8} | {sinal_triangular.min():10.6f} | {sinal_triangular.max():10.6f}")
 print(f"{'Seno Retif.':15} | {len(sinal_seno_retificado):8} | {sinal_seno_retificado.min():10.6f} | {sinal_seno_retificado.max():10.6f}")
+print(f"{'Reta 1.0':15} | {len(sinal_cc):8} | {sinal_cc.min():10.6f} | {sinal_cc.max():10.6f}")
