@@ -30,7 +30,7 @@ typedef struct {
 
 void waveform_init(WaveformCtrl *ctrl, uint8_t max_amplitude);
 void waveform_get_sample(WaveformCtrl *ctrl, volatile float *out);
-void waveform_next_wave();
+void waveform_next_wave(WaveformCtrl *ctrl);
 void waveform_update_amplitude(WaveformCtrl *ctrl, int16_t delta);
 
 #endif /* INC_WAVE_TABLE_H_ */

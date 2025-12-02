@@ -22,8 +22,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_VOLTAGE 24
-#define CVT_FACTOR (MAX_VOLTAGE / 3.3f)
+#define MAX_VOLTAGE 30
+//#define ADC_V_CVT 0.00080566406f // (3.3 / 4095)
+#define BUCK_CVT_FACTOR 0.00732421872 // ((MAX_VOLTAGE / 3.3f) * ADC_V_CVT)
 #define TIMER_COUNT 17000
 #define Kp 0.09f
 #define Ki 0.2f
@@ -40,11 +41,13 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
 TIM_HandleTypeDef htim2;
+DMA_HandleTypeDef hdma_tim2_ch2;
 
 osThreadId PIDHandle;
 /* USER CODE BEGIN PV */
 // buffers para o DMA
 uint16_t adc1_buffer;
+volatile uint16_t duty_cycle_buffer;
 
 // semaforos e mutex's
 SemaphoreHandle_t sem_adc1 = NULL;
@@ -61,7 +64,6 @@ PIDController pid_controller;
 // variaveis globais
 volatile float buck_output;
 volatile float reference;
-volatile uint16_t duty_cycle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -73,6 +75,15 @@ static void MX_ADC1_Init(void);
 void PIDTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
+
+void vApplicationIdleHook(void)
+{
+	// FreeRTOS config param: USE_IDLE_HOOK enable
+    // Wait For Interrupt
+    // garante que acorda via ADC, UART, EXTI, etc
+    __WFI();   // CPU entra em sleep até próxima interrupção
+}
+
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 	// Ao ler AD abre o semaforo para a tarefa de PID
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -113,6 +124,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void btn_c13_callback(TimerHandle_t xTimer)
 {
+	pid_reset(&pid_controller);
 	waveform_next_wave(&waveform_selector);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);  // Reabilita interrupções
 }
@@ -172,6 +184,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc1_buffer, 1);
+  HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_2, (uint32_t*)&duty_cycle_buffer, 1);
   HAL_TIM_Base_Start(&htim2);
   /* USER CODE END 2 */
 
@@ -347,6 +360,7 @@ static void MX_TIM2_Init(void)
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
@@ -366,15 +380,28 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
 
 }
 
@@ -392,6 +419,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
 }
 
@@ -446,11 +476,9 @@ void PIDTask(void const * argument)
   {
 	xSemaphoreTake(sem_adc1, portMAX_DELAY);
 
-	buck_output = adc1_buffer * CVT_FACTOR;
+	buck_output = adc1_buffer * BUCK_CVT_FACTOR;
 	waveform_get_sample(&waveform_selector, &reference);
-	pid_compute(&pid_controller, &reference, &buck_output, &duty_cycle);
-
-	// gerar aqui o pwm
+	pid_compute(&pid_controller, &reference, &buck_output, &duty_cycle_buffer);
 
     taskYIELD();
   }
