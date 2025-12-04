@@ -64,9 +64,8 @@ void datalogger_task(void *param)
     Datalogger *datalogger = (Datalogger*) param;
     TickType_t timer;
 
+    timer = xTaskGetTickCount();
     while (1) {
-        timer = xTaskGetTickCount();
-
         datalogger_log(datalogger);
 
         vTaskDelayUntil(&timer, datalogger->log_interval_ms);

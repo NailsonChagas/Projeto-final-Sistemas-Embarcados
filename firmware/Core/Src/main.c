@@ -57,9 +57,9 @@ volatile uint16_t duty_cycle_buffer;
 // semaforos e mutex's
 SemaphoreHandle_t sem_adc1 = NULL;
 
-// software timers para debounce
+// software timers para debounce e suas variaveis auxiliares
 TimerHandle_t btn_c13_c12_c10_debounce;
-uint16_t btn_GPIO_Pin;
+uint16_t btn_GPIO_Pin; // buffer para saber qual botão causou a interrupção
 
 // handlers (Filtros, Seletores, Controle, ...)
 WaveformCtrl waveform_selector;
@@ -150,9 +150,9 @@ void datalogger_fetch_values(uint8_t **data, size_t *size)
 {
     static uint8_t buffer[10]; // 2 bytes + 4 bytes + 4 bytes = 10 bytes
 
-    uint16_t dc   = duty_cycle_buffer; // leitura atômica (16 bits)
-    float out     = buck_output;       // leitura atômica (32 bits no Cortex-M)
-    float ref     = reference;
+    uint16_t dc = duty_cycle_buffer;
+    float out = buck_output;
+    float ref = reference;
 
     memcpy(&buffer[0], &dc,  sizeof(dc));
     memcpy(&buffer[2], &out, sizeof(out));
@@ -188,6 +188,7 @@ int main(void)
   /* USER CODE BEGIN Init */
   waveform_init(&waveform_selector, MAX_VOLTAGE);
   pid_init(&pid_controller, Kp, Ki, Kd, TIMER_COUNT, MAX_VOLTAGE);
+  datalogger_init(&datalogger, &hlpuart1, 32, 100, datalogger_fetch_values);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -235,7 +236,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   xTaskCreate(led_task, "LED75", 128, &led_75, 4, NULL);
-//  xTaskCreate(datalogger_task, "DATALOGGER", 128, &datalogger, 4, NULL);
+  xTaskCreate(datalogger_task, "DATALOGGER", 256, &datalogger, 4, NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
