@@ -1,0 +1,3 @@
+../Core/Src/datalogger.c:10:6:datalogger_init	24	static
+../Core/Src/datalogger.c:30:13:datalogger_log	32	static
+../Core/Src/datalogger.c:62:6:datalogger_task	24	static

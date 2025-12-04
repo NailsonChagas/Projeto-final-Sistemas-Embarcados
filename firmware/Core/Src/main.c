@@ -14,6 +14,7 @@
 #include "led.h"
 #include "pid.h"
 #include "wave_table.h"
+#include "datalogger.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,6 +42,9 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+UART_HandleTypeDef hlpuart1;
+DMA_HandleTypeDef hdma_lpuart1_tx;
+
 TIM_HandleTypeDef htim2;
 DMA_HandleTypeDef hdma_tim2_ch2;
 
@@ -54,13 +58,13 @@ volatile uint16_t duty_cycle_buffer;
 SemaphoreHandle_t sem_adc1 = NULL;
 
 // software timers para debounce
-TimerHandle_t btn_c13_debounce;
-TimerHandle_t btn_c12_debounce;
-TimerHandle_t btn_c10_debounce;
+TimerHandle_t btn_c13_c12_c10_debounce;
+uint16_t btn_GPIO_Pin;
 
 // handlers (Filtros, Seletores, Controle, ...)
 WaveformCtrl waveform_selector;
 PIDController pid_controller;
+Datalogger datalogger;
 
 // variaveis globais
 volatile float buck_output;
@@ -74,6 +78,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_LPUART1_UART_Init(void);
 void PIDTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -95,52 +100,66 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+	const uint16_t mask_pins = GPIO_PIN_13 | GPIO_PIN_12 | GPIO_PIN_10;
     BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
     HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 
-    switch (GPIO_Pin)
+    if (GPIO_Pin & mask_pins)
     {
-        case GPIO_PIN_13:
-        {
-        	xTimerStartFromISR(btn_c13_debounce, &pxHigherPriorityTaskWoken);
-        	break;
-        }
-        case GPIO_PIN_12:
-        {
-        	xTimerStartFromISR(btn_c12_debounce, &pxHigherPriorityTaskWoken);
-        	break;
-        }
-        case GPIO_PIN_10:
-        {
-        	xTimerStartFromISR(btn_c10_debounce, &pxHigherPriorityTaskWoken);
-        	break;
-        }
-        default:
-        {
-        	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-        	return;
-        }
+    	btn_GPIO_Pin = GPIO_Pin;
+    	xTimerStartFromISR(btn_c13_c12_c10_debounce, &pxHigherPriorityTaskWoken);
     }
+    else
+    {
+    	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+    }
+
     portYIELD_FROM_ISR(pxHigherPriorityTaskWoken);
 }
 
-void btn_c13_callback(TimerHandle_t xTimer)
+void btn_c13_c12_c10_callback(TimerHandle_t xTimer)
 {
-	pid_reset(&pid_controller);
-	waveform_next_wave(&waveform_selector);
+	uint16_t *gpio_pin = (uint16_t*)pvTimerGetTimerID(xTimer);
+
+	switch (*gpio_pin)
+	{
+		case GPIO_PIN_13:
+		{
+			pid_reset(&pid_controller);
+			waveform_next_wave(&waveform_selector);
+			break;
+		}
+		case GPIO_PIN_12:
+		{
+			waveform_update_amplitude(&waveform_selector, -1);
+			break;
+		}
+		case GPIO_PIN_10:
+		{
+			waveform_update_amplitude(&waveform_selector, 1);
+			break;
+		}
+		default:
+			break;
+	}
+
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);  // Reabilita interrupções
 }
 
-void btn_c12_callback(TimerHandle_t xTimer)
+void datalogger_fetch_values(uint8_t **data, size_t *size)
 {
-	waveform_update_amplitude(&waveform_selector, -1);
-	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);  // Reabilita interrupções
-}
+    static uint8_t buffer[10]; // 2 bytes + 4 bytes + 4 bytes = 10 bytes
 
-void btn_c10_callback(TimerHandle_t xTimer)
-{
-	waveform_update_amplitude(&waveform_selector, 1);
-	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);  // Reabilita interrupções
+    uint16_t dc   = duty_cycle_buffer; // leitura atômica (16 bits)
+    float out     = buck_output;       // leitura atômica (32 bits no Cortex-M)
+    float ref     = reference;
+
+    memcpy(&buffer[0], &dc,  sizeof(dc));
+    memcpy(&buffer[2], &out, sizeof(out));
+    memcpy(&buffer[6], &ref, sizeof(ref));
+
+    *data = buffer;
+    *size = sizeof(buffer);
 }
 
 /* USER CODE END PFP */
@@ -183,6 +202,7 @@ int main(void)
   MX_DMA_Init();
   MX_TIM2_Init();
   MX_ADC1_Init();
+  MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc1_buffer, 1);
@@ -200,9 +220,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
-  btn_c13_debounce = xTimerCreate("BTNC13", 50, pdFALSE, NULL, btn_c13_callback);
-  btn_c12_debounce = xTimerCreate("BTNC12", 50, pdFALSE, NULL, btn_c12_callback);
-  btn_c10_debounce = xTimerCreate("BTNC10", 50, pdFALSE, NULL, btn_c10_callback);
+  btn_c13_c12_c10_debounce = xTimerCreate("BTNC13-12-10", 50, pdFALSE, (void*)&btn_GPIO_Pin, btn_c13_c12_c10_callback);
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -217,6 +235,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   xTaskCreate(led_task, "LED75", 128, &led_75, 4, NULL);
+//  xTaskCreate(datalogger_task, "DATALOGGER", 128, &datalogger, 4, NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -350,6 +369,53 @@ static void MX_ADC1_Init(void)
 }
 
 /**
+  * @brief LPUART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_LPUART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN LPUART1_Init 0 */
+
+  /* USER CODE END LPUART1_Init 0 */
+
+  /* USER CODE BEGIN LPUART1_Init 1 */
+
+  /* USER CODE END LPUART1_Init 1 */
+  hlpuart1.Instance = LPUART1;
+  hlpuart1.Init.BaudRate = 209700;
+  hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
+  hlpuart1.Init.StopBits = UART_STOPBITS_1;
+  hlpuart1.Init.Parity = UART_PARITY_NONE;
+  hlpuart1.Init.Mode = UART_MODE_TX_RX;
+  hlpuart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  hlpuart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  hlpuart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  hlpuart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&hlpuart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&hlpuart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&hlpuart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&hlpuart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN LPUART1_Init 2 */
+
+  /* USER CODE END LPUART1_Init 2 */
+
+}
+
+/**
   * @brief TIM2 Initialization Function
   * @param None
   * @retval None
@@ -425,6 +491,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+  /* DMA1_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
 }
 
@@ -492,8 +561,6 @@ void PIDTask(void const * argument)
 	buck_output = adc1_buffer * BUCK_CVT_FACTOR;
 	waveform_get_sample(&waveform_selector, &reference);
 	pid_compute(&pid_controller, &reference, &buck_output, &duty_cycle_buffer);
-
-    taskYIELD();
   }
   /* USER CODE END 5 */
 }
